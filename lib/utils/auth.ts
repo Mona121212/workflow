@@ -1,7 +1,7 @@
-// lib/utils/auth.ts
+
 
 import * as argon2 from 'argon2';
-import { SignJWT, jwtVerify } from 'jose';
+import { JWTPayload, SignJWT, jwtVerify } from 'jose';
 import { nanoid } from 'nanoid';
 
 // ============================================
@@ -40,7 +40,7 @@ export async function verifyPassword(
 // ============================================
 // JWT Token Generation
 // ============================================
-export interface TokenPayload {
+export interface TokenPayload extends JWTPayload {
   userId: string;
   email: string;
   tenantId?: string;
@@ -68,9 +68,9 @@ export async function verifyAccessToken(
   token: string
 ): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as TokenPayload;
-  } catch (error) {
+    const { payload } = await jwtVerify<TokenPayload>(token, JWT_SECRET);
+      return payload;
+  } catch {
     return null;
   }
 }
