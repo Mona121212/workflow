@@ -1,0 +1,85 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  users     Membership[]
+  tasks     Task[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique @db.VarChar(320)
+  passwordHash String         @db.VarChar(255)
+  memberships  Membership[]
+  tasksCreated Task[]         @relation("TasksCreatedBy")
+  tokens       RefreshToken[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Membership {
+  id       String @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role   @default(MEMBER)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Task {
+  id       String  @id @default(cuid())
+  tenantId String
+  title    String
+  done     Boolean @default(false)
+
+  createdById String
+  createdBy   User   @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  //if you need the header title is same, cancle the next comment
+  // @@unique([tenantId, title])
+
+  @@index([tenantId])
+  @@index([createdById])
+}
+
+model RefreshToken {
+  id        String    @id
+  userId    String
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
