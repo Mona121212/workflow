@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,27 +7,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// Tenant Model (Multi-tenancy)
+// ============================================
 model Tenant {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  users     Membership[]
-  tasks     Task[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  // Relations
+  users Membership[]
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenants")
 }
 
+// ============================================
+// User Model
+// ============================================
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique @db.VarChar(320)
-  passwordHash String         @db.VarChar(255)
-  memberships  Membership[]
-  tasksCreated Task[]         @relation("TasksCreatedBy")
-  tokens       RefreshToken[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id           String @id @default(cuid())
+  email        String @unique @db.VarChar(320)
+  passwordHash String @db.VarChar(255)
+
+  // Profile Info
+  firstName String? @db.VarChar(100)
+  lastName  String? @db.VarChar(100)
+  avatar    String? @db.VarChar(500)
+
+  // Status
+  emailVerified Boolean @default(false)
+  isActive      Boolean @default(true)
+
+  // Relations
+  memberships   Membership[]
+  tasksCreated  Task[]         @relation("TasksCreatedBy")
+  tasksAssigned Task[]         @relation("TasksAssignedTo")
+  tokens        RefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
 
+// ============================================
+// Membership Model (User-Tenant Relationship)
+// ============================================
 model Membership {
   id       String @id @default(cuid())
   userId   String
@@ -38,48 +66,82 @@ model Membership {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, tenantId])
-  @@index([tenantId])
-  @@index([userId])
+  @@map("memberships")
 }
 
+// ============================================
+// Refresh Token Model
+// ============================================
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique @db.VarChar(500)
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// Task Model (Basic Version)
+// ============================================
+model Task {
+  id          String     @id @default(cuid())
+  title       String     @db.VarChar(500)
+  description String?    @db.Text
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+
+  // Relations
+  tenantId     String
+  createdById  String
+  assignedToId String?
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy  User   @relation("TasksCreatedBy", fields: [createdById], references: [id])
+  assignedTo User?  @relation("TasksAssignedTo", fields: [assignedToId], references: [id])
+
+  // Timestamps
+  dueDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([createdById])
+  @@index([assignedToId])
+  @@map("tasks")
+}
+
+// ============================================
+// Enum Types
+// ============================================
 enum Role {
   OWNER
   ADMIN
   MEMBER
-  VIEWER
+  GUEST
 }
 
-model Task {
-  id       String  @id @default(cuid())
-  tenantId String
-  title    String
-  done     Boolean @default(false)
-
-  createdById String?
-  createdBy   User?   @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  //if you need the header title is same, cancle the next comment
-  // @@unique([tenantId, title])
-
-  @@index([tenantId])
-  @@index([createdById])
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
 }
 
-model RefreshToken {
-  id        String    @id
-  userId    String
-  userAgent String?
-  ipAddress String?
-  expiresAt DateTime
-  revokedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
