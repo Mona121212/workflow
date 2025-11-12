@@ -22,15 +22,26 @@ const ACCESS_EXPIRES = '15m';
 const REFRESH_EXPIRES = '7d';
 
 // ===== Types =====
-export interface AccessTokenPayload extends JwtPayload {
+export interface AccessTokenPayload extends JWTPayload {
   userId: string;
   tenantId: string;
   email: string;
-  role: string;
+  role:Role | string;
 }
 
 export interface RefreshTokenPayload extends AccessTokenPayload {
   tokenId: string;
+}
+
+function isAccessPayload(p: JWTPayload): p is AccessTokenPayload{
+    return typeof p?.userId === 'string'
+     && typeof p?.tenantId === 'string'
+    && typeof p?.email === 'string'
+    && typeof p?.role === 'string';
+}
+
+function isRefreshPayload(p: JWTPayload): p is RefreshTokenPayload {
+  return isAccessPayload(p) && typeof (p as any).tokenId === 'string';
 }
 
 export interface AuthSession {
@@ -114,7 +125,7 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
       issuer: ISSUER,
       audience: AUDIENCE,
     });
-    return payload as AccessTokenPayload;
+      return isAccessPayload(payload) ? payload : null;
   } catch {
     return null;
   }
@@ -126,7 +137,7 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
       issuer: ISSUER,
       audience: AUDIENCE,
     });
-    return payload as RefreshTokenPayload;
+      return isRefreshPayload(payload) ? payload : null;
   } catch {
     return null;
   }

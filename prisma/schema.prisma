@@ -56,8 +56,8 @@ model Task {
   title    String
   done     Boolean @default(false)
 
-  createdById String
-  createdBy   User   @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdById String?
+  createdBy   User?   @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
