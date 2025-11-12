@@ -1,4 +1,4 @@
-// lib/utils/database.ts
+
 
 import { PrismaClient } from '@prisma/client';
 
