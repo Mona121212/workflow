@@ -117,31 +117,44 @@ export async function POST(req: NextRequest) {
     });
 
     // 10. Return success response
-    return NextResponse.json(
-      {
-        message: 'Registration successful',
-        user: {
-          id: result.user.id,
-          email: result.user.email,
-          firstName: result.user.firstName,
-          lastName: result.user.lastName,
-        },
-        tenant: {
-          id: result.tenant.id,
-          name: result.tenant.name,
-          slug: result.tenant.slug,
-            },
-        role: 'OWNER',  // update, tell frontend this is owner
-        accessToken,
-        refreshToken,
-      },
-      { 
-        status: 201,
-        headers: {
-          'Set-Cookie': `refreshToken=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`, // 7 days
-        },
-      }
-    );
+      const response = NextResponse.json(
+          {
+              message: 'Registration successful',
+              user: {
+                  id: result.user.id,
+                  email: result.user.email,
+                  firstName: result.user.firstName,
+                  lastName: result.user.lastName,
+              },
+              tenant: {
+                  id: result.tenant.id,
+                  name: result.tenant.name,
+                  slug: result.tenant.slug,
+              },
+              role: 'OWNER',        // new register is  OWNER
+              accessToken,
+              refreshToken,
+          },
+          { status: 201 }
+      );
+
+      response.cookies.set('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7,
+      });
+
+      response.cookies.set('accessToken', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 15,
+      });
+
+return response
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(

@@ -107,32 +107,48 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    
     // 11. Return success response
-    return NextResponse.json(
-      {
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-        tenant: {
-          id: membership.tenant.id,
-          name: membership.tenant.name,
-          slug: membership.tenant.slug,
-        },
-        role: membership.role,
-        accessToken,
-        refreshToken,
-      },
-      {
-        status: 200,
-        headers: {
-          'Set-Cookie': `refreshToken=${refreshToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`, // 7 days
-        },
-      }
-    );
+      const response = NextResponse.json(
+          {
+              message: 'Login successful',
+              user: {
+                  id: user.id,
+                  email: user.email,
+                  firstName: user.firstName,
+                  lastName: user.lastName,
+              },
+              tenant: {
+                  id: membership.tenant.id,
+                  name: membership.tenant.name,
+                  slug: membership.tenant.slug,
+              },
+              role: membership.role,
+              accessToken,
+              refreshToken,
+          },
+          { status: 200 }
+      );
+
+      // set refreshToken cookie
+      response.cookies.set('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+    // set accessToken cookie(for server use)
+      response.cookies.set('accessToken', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 15, // 15 minutes
+      });   
+
+return response
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

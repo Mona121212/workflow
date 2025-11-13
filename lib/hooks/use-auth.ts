@@ -42,8 +42,13 @@ export function useAuth() {
         refreshToken: result.refreshToken,
       });
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // jump to page base on role
+    const target =
+    result.role === 'OWNER' || result.role === 'ADMIN'
+        ? '/admin'
+        : '/dashboard'
+
+        router.push(target);
       return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Registration failed';
@@ -83,8 +88,12 @@ export function useAuth() {
         refreshToken: result.refreshToken,
       });
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+    const target =
+    result.role === 'OWNER' || result.role === 'ADMIN'
+        ? '/admin'
+        : '/dashboard'
+
+    router.push(target)
       return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';

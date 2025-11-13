@@ -1,4 +1,6 @@
 import { PrismaClient, Role } from '@prisma/client'
+import { hashPassword } from '../lib/utils/auth'   // 👈 注意相对路径
+  
 const prisma = new PrismaClient()
 
 async function main() {
@@ -8,11 +10,17 @@ async function main() {
     create: { name: 'Acme Inc.', slug: 'acme' },
   })
 
+  // set an admin account password, Admin123!
+  const adminPasswordHash = await hashPassword('Admin123!')
+
   // admin account
   const admin = await prisma.user.upsert({
     where: { email: 'admin@acme.test' },
     update: {},
-    create: { email: 'admin@acme.test', passwordHash: 'seeded-no-login' },
+    create: {
+      email: 'admin@acme.test',
+      passwordHash: adminPasswordHash,       // 👈 this password after hash
+    },
   })
 
   await prisma.membership.upsert({
@@ -22,10 +30,14 @@ async function main() {
   })
 
   // member account
+  const memberPasswordHash = await hashPassword('Member123!')
   const member = await prisma.user.upsert({
     where: { email: 'member@acme.test' },
     update: {},
-    create: { email: 'member@acme.test', passwordHash: 'seeded-no-login' },
+    create: {
+      email: 'member@acme.test',
+      passwordHash: memberPasswordHash,
+    },
   })
 
   await prisma.membership.upsert({
