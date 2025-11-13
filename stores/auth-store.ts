@@ -17,12 +17,13 @@ interface Tenant {
   name: string;
   slug: string;
 }
+type UserRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST'
 
 interface AuthState {
   // State
   user: User | null;
   tenant: Tenant | null;
-  role: string | null;
+  role: UserRole | null;
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
@@ -32,7 +33,7 @@ interface AuthState {
   setAuth: (data: {
     user: User;
     tenant: Tenant;
-    role: string;
+    role: UserRole;
     accessToken: string;
     refreshToken: string;
   }) => void;
@@ -61,7 +62,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: data.user,
           tenant: data.tenant,
-          role: data.role,
+          role: data.role, // it will change to 'OWNER' | 'ADMIN'
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           isAuthenticated: true,

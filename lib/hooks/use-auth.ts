@@ -37,7 +37,7 @@ export function useAuth() {
       setAuth({
         user: result.user,
         tenant: result.tenant,
-        role: 'OWNER',
+        role: result.role,  // use backend return to role data
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
       });

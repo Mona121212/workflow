@@ -1,10 +1,18 @@
 'use client'
 
 import { useAuthStore } from '@/stores/auth-store'
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
-  const { user, tenant, role } = useAuthStore()
+  const { user, tenant, role, logout } = useAuthStore()
+  const router = useRouter()
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    logout()
+    router.push('/login')
+  }
 
+  const isAdmin = role === 'OWNER' || role === 'ADMIN' // define them as admin
   return (
     <div className="space-y-8">
       {/* Welcome Section */}

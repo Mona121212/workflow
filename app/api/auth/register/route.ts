@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
           id: result.tenant.id,
           name: result.tenant.name,
           slug: result.tenant.slug,
-        },
+            },
+        role: 'OWNER',  // update, tell frontend this is owner
         accessToken,
         refreshToken,
       },
